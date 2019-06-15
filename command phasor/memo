@@ -1,0 +1,5 @@
+1. The PC should append a dead loop at the end of the instruction for each axis.
+
+2. The MCU's timer frequency = 2MHz (T=0.5us). The delay time for each step should be greater than 2000:
+  The MCU need time to process the instruction.
+  The motor need time to response.
