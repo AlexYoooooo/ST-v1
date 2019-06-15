@@ -4,53 +4,43 @@ The algorithm will be used in the MCU; however, due to the low computation power
 
 About this algorithm:
 Assume the command given by PC is:
-5A,2B,7(,3A,7),3(,2(,2B,4A,2),5E,2),0(,1U,0)
+5+1056,2-234,7(,3+444,7),3(,2(,2-233,4+20000,2),5-3333,2),0(,1+11,0)
 
-Format of the command: TO,TO,TO
-T: Run this command for T times (unsigned 16-bit int)
-O: Operation pointer (unsigned 16-bit int, pointer to operation table)
-	( = 0xFFFE: this create a subloop
-	) = 0xFFFF: this end a subloop
-	Notice: max nest level = 256
+Format of the command: CDT,CDT,CDT
+C: Unsigned 16-bit: Counter, run this command for T times
+D: 1-bit: Forward direction = 1; Backward direction = 0
+T: Unsigned 15-bit: Wait for T cycles before next instruction
+If CT = 0x8000: Enter a loop
+If CT = 0x0000: Exit a loop
 
-5A: This will do operation A for 5 times
-2F,3M: This will do F for 2 times, then M for 3 times
-2(,5B,2): This will do 5B for 2 times
-7(,2C,2A,7): This will do 2C then 2A, the combination of 2C,2A will be executed for 7 times
-7(,2(,4Z,2B,2),20B,7): This will do 4Z,2B for 2 times, then 20B. After this, the combination of 2(,4Z,2B,2),20B will be executed for 2 times
-0(,5B,3Z,0): This will run 5B,3Z forever
-
-For the above example, assume operation table is located at SRAM 0x0000
-	Notice: Each operation takes 4 bytes (2 bytes for direction, 2 bytes for speed)
-Assume Operation A means Operation 0, B means 1 and so on.
-The PC should should send the following code to the MCU:
-(Message header is not shown)
-0x0005, 0x0000, 0x0002, 0x0001, 0x0007, 0xFFFE, 0x0003, 0x0000, 0x0007, 0xFFFF,
-0x0003, 0xFFFE, 0x0002, 0xFFFE, 0x0002, 0x0001, 0x0004, 0x0000, 0x0002, 0xFFFF,
-0x0005, 0x0004, 0x0002, 0xFFFF, 0x0000, 0xFFFE, 0x0001, 0x0020, 0x0000, 0xFFFF
-(Checksum and message footer is not shown)
+For example:
+5+1056: Run forwards for 5 times, interval between each run = 1056
+5+1056,2-234: Run forwards for 5 times, interval between each run = 1056; then, Run backwards for 2 times, interval between each run = 234
+2(,5+1056,2): Run forwards for 5*5 times, interval between each run = 1056. Repeat this for 2 more times. (total execution count = 5 * (2+1) = 15)
+7(,5+1056,2-234,7): Run forwards for 5 times, interval between each run = 1056; then, Run backwards for 2 times, interval between each run = 234. Then, repeat this for 7 more times
+65535(,5+1056,2-234,65535): Run forwards for 5 times, interval between each run = 1056; then, Run backwards for 2 times, interval between each run = 234. Repeat this forever
 */
 
 #include <stdio.h>
 #include <stdint.h>
 #include <windows.h>
 
-uint16_t input[] = {
-	0x0005, 0x0000, //0
-	0x0002, 0x0001, //1
-	0x0007, 0xFFFE, //2
-	0x0003, 0x0000, //3
-	0x0007, 0xFFFF, //4
-	0x0003, 0xFFFE, //5
-	0x0002, 0xFFFE, //6
-	0x0002, 0x0001, //7
-	0x0004, 0x0000, //8
-	0x0002, 0xFFFF, //9
-	0x0005, 0x0004, //10
-	0x0002, 0xFFFF, //11
-	0x0000, 0xFFFE, //12
-	0x0001, 0x0020, //13
-	0x0000, 0xFFFF  //14
+uint32_t step[] = {
+	(5<<16)|	(1<<15)|	1056,
+	(2<<16)|	(0<<15)|	234,
+	(7<<16)|	(1<<15)|	0,
+	(3<<16)|	(1<<15)|	444,
+	(7<<16)|	(0<<15)|	0,
+	(3<<16)|	(1<<15)|	0,
+	(2<<16)|	(1<<15)|	0,
+	(2<<16)|	(0<<15)|	233,
+	(4<<16)|	(1<<15)|	20000,
+	(2<<16)|	(0<<15)|	0,
+	(5<<16)|	(0<<15)|	3333,
+	(3<<16)|	(0<<15)|	0,
+	(65535<<16)|	(1<<15)|	0,
+	(1<<16)|	(1<<15)|	11,
+	(65535<<16)|	(0<<15)|	0
 };
 
 int main() {
@@ -60,9 +50,8 @@ int main() {
 	
 	//Loop control (max nest level = 256)
 	uint8_t nestLevel = 0;
-	uint16_t nestCounter[256];
+	uint16_t nestCounter[256]; //Counts execution time for current iteration
 	uint16_t nestLocationStart[256];
-	uint16_t nestLocationEnd[256];
 	
 	//Loop control processor
 	uint8_t currentNestLevel;
@@ -75,59 +64,33 @@ int main() {
 		printf("\t\tPhasor = %d\n",phasor);
 		
 		//Enter a loop
-		if (input[phasor*2+1] == 0xFFFE) {
-			printf("%d - Nest++ - %d\n",nestLevel,nestLevel+1);
-			nestCounter[nestLevel] = input[phasor*2];
+		if ( (step[phasor]&0xFFFF) == 0x8000) {
+			printf("%d --> Nest++ --> %d\n",nestLevel,nestLevel+1);
+			nestCounter[nestLevel] = step[phasor] >> 16;
 			
-			//Record start location (this is used to repeat the loop)
+			//Record start location of this iteration
 			nestLocationStart[nestLevel] = phasor;
-			
-			//Record end location (this is used to end the loop and go to next segment)
-			currentNestLevel = 0;
-			currentLocation = phasor;
-			for(;;) {
-				printf("Current location %d (%d), level %d\n",currentLocation,input[currentLocation*2+1],currentNestLevel);
-				
-				/*
-				To find the end of the loop, we need to find the ")" mark (charcode 0xFFFF)
-				However, because we have nested loop, we need to find the ")" with the smae nest level as the loop
-				*/
-				
-				if (input[currentLocation*2+1] == 0xFFFE)
-					currentNestLevel++;
-				if (input[currentLocation*2+1] == 0xFFFF)
-					currentNestLevel--;
-				
-				currentLocation++;
-				
-				if (currentNestLevel == 0) {
-					nestLocationEnd[nestLevel] = currentLocation-1;
-					break;
-				}
-			}
 			
 			nestLevel++;
 		}
 		
 		//Leave a loop
-		else if (input[phasor*2+1] == 0xFFFF) {
-			printf("%d - Nest-- - %d (%d) \n",nestLevel,nestLevel-1,nestCounter[nestLevel-1]);
+		else if ( (step[phasor]&0xFFFF) == 0x0000) {
+			printf("%d --> Nest-- --> %d (remainder %d) \n",nestLevel,nestLevel-1,nestCounter[nestLevel-1]);
 			
-			nestCounter[nestLevel-1]--;
-			
-			//Dead loop (loop for 0 times means loop forever)
-			if (nestCounter[nestLevel-1] == 0xFFFF) {
-				nestCounter[nestLevel-1] = 0;
+			//Dead loop (repeat for 0 times means repeat forever)
+			if (nestCounter[nestLevel-1] == 65535) {
 				phasor = nestLocationStart[nestLevel-1];
 			}
 			
 			//Loop in progress
-			else if (nestCounter[nestLevel-1] > 0)
+			else if (nestCounter[nestLevel-1] > 0) {
 				phasor = nestLocationStart[nestLevel-1];
+				nestCounter[nestLevel-1]--;
+			}
 			
 			//Loop end
 			else {
-				phasor = nestLocationEnd[nestLevel-1];
 				nestLevel--;
 			}
 			
@@ -136,9 +99,9 @@ int main() {
 		
 		//Execute operation
 		else
-			for (currentCounter = input[phasor*2]; currentCounter > 0; currentCounter--) {
-				printf("Operation %d\n",input[phasor*2+1]);
-				Sleep(100); //Debug using
+			for (currentCounter = step[phasor]>>16; currentCounter > 0; currentCounter--) {
+				printf("Dir %d, Set timer %d\n",(step[phasor]&0x8000)>>15,step[phasor]&0x7FFF);
+				Sleep(10); //Debug using
 			}
 	}
 	
