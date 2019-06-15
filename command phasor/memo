@@ -3,3 +3,7 @@
 2. The MCU's timer frequency = 2MHz (T=0.5us). The delay time for each step should be greater than 2000:
   The MCU need time to process the instruction.
   The motor need time to response.
+
+3. The front end software should reset all the axis to the init point before use.
+
+4. Max nest level = 16
