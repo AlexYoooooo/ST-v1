@@ -7,18 +7,18 @@ Assume the command given by PC is:
 5+1056,2-234,7(,3+444,7),3(,2(,2-233,4+20000,2),5-3333,2),0(,1+11,0)
 
 Format of the command: CDT,CDT,CDT
-C: Unsigned 16-bit: Counter, run this command for T times
+C: Unsigned 16-bit: Counter, repeat this command for T times (actual execute count = C + 1)
 D: 1-bit: Forward direction = 1; Backward direction = 0
 T: Unsigned 15-bit: Wait for T cycles before next instruction
 If CT = 0x8000: Enter a loop
 If CT = 0x0000: Exit a loop
 
 For example:
-5+1056: Run forwards for 5 times, interval between each run = 1056
-5+1056,2-234: Run forwards for 5 times, interval between each run = 1056; then, Run backwards for 2 times, interval between each run = 234
-2(,5+1056,2): Run forwards for 5*5 times, interval between each run = 1056. Repeat this for 2 more times. (total execution count = 5 * (2+1) = 15)
-7(,5+1056,2-234,7): Run forwards for 5 times, interval between each run = 1056; then, Run backwards for 2 times, interval between each run = 234. Then, repeat this for 7 more times
-65535(,5+1056,2-234,65535): Run forwards for 5 times, interval between each run = 1056; then, Run backwards for 2 times, interval between each run = 234. Repeat this forever
+5+1056: Run forwards for 6 times, interval between each run = 1056
+5+1056,2-234: Run forwards for 6 times, interval between each run = 1056; then, Run backwards for 3 times, interval between each run = 234
+2(,5+1056,2): Run forwards for 6 times, interval between each run = 1056. Repeat this for 2 more times. (total execution count = 6 * 3 = 18)
+7(,5+1056,2-234,7): Run forwards for 6 times, interval between each run = 1056; then, Run backwards for 3 times, interval between each run = 234. Then, repeat this for 7 more times
+65535(,5+1056,2-234,65535): Run forwards for 6 times, interval between each run = 1056; then, Run backwards for 3 times, interval between each run = 234. Repeat this forever
 */
 
 #include <stdio.h>
@@ -99,7 +99,7 @@ int main() {
 		
 		//Execute operation
 		else
-			for (currentCounter = step[phasor]>>16; currentCounter > 0; currentCounter--) {
+			for (currentCounter = step[phasor]>>16; currentCounter >= 0; currentCounter--) {
 				printf("Dir %d, Set timer %d\n",(step[phasor]&0x8000)>>15,step[phasor]&0x7FFF);
 				Sleep(10); //Debug using
 			}
