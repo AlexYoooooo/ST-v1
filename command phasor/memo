@@ -6,4 +6,4 @@
 
 3. The front end software should reset all the axis to the init point before use.
 
-4. Max nest level = 16
+4. Max nest level = 14
