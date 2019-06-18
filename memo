@@ -9,11 +9,11 @@
 4. Max nest level = 14
 
 Instruction:
-PC > 1xxxxxxx:	Program instruction, length = x * 32 byte (x * 8 word) Max instruction length: 1024 words (4096 bytes).
+PC > 1xxxxxxx:	Program instruction, length = x * 256 byte. Max instruction length: 1024 words (4096 bytes), Xmax = 16.
 		Instruction [1:0]: Start location (Init phasor) of Axis-W, phasor is 16-bit long.
 		Instruction [3:2]: --- of Axis-X.
-		Instruction [3:2]: --- of Axis-Y.
-		Instruction [3:2]: --- of Axis-Z.
+		Instruction [5:4]: --- of Axis-Y.
+		Instruction [7:6]: --- of Axis-Z.
 		Return: Checksum.
 			If checksum is not returned after sending package, that means one ore more byte lost.
 			In this case, sending one or more 0x00 until checksum returned. Then, re-send the entire package again.
@@ -25,7 +25,9 @@ PC > 0001xxxx:	Motor forward one step. (Do this after motor stopped)
 		Return: yyyyxxxx. yyyy = limit switch value
 PC > 0010xxxx:	Motor backword one step. (Do this after motor stopped)
 		Return: yyyyxxxx. yyyy = limit switch value
-PC > 0100xxxx:	Reload phasor from instruction buffer. Set delay to 200 cycle.
+PC > 0100xxxx:	Reload phasor from instruction buffer. Set delay to 200 cycle. (Do this after motor stopped)
 		Return: 0100xxxx
 PC > 01010000:	Get phasor statue
 		Return: Phasor statue (4*61 bytes)
+PC > else:	No action
+		Return: 0x00
