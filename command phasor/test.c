@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <stdint.h>
 
-#define SIMMULATION_PHASORDETAIL 1
+#define SIMMULATION_PHASORDETAIL 1 //Show detail
 unsigned long long int timestamp = 0;
 signed long long int motorDegree = 0;
 unsigned long long int eventNum = 0;

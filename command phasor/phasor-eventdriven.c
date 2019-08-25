@@ -20,6 +20,10 @@ uint16_t phase(volatile struct Phasor *axis) {
 	
 	//Enter a loop
 	if (dirAndDelay == 0x8000) {
+		#ifdef SIMULATOR
+			deadloop = 1;
+		#endif
+		
 		axis->nestCtr[axis->nestLevel] = runCtr;
 		axis->nestLocation[axis->nestLevel++] = axis->phasor + 4;
 		/* phasor now points to the beginning of the loop, which indicates the execution count of the loop. */
@@ -35,6 +39,11 @@ uint16_t phase(volatile struct Phasor *axis) {
 			axis->phasor = axis->nestLocation[axis->nestLevel-1]; //Move to beginning of the loop of the queery
 			if (axis->nestCtr[axis->nestLevel-1] != 0xFFFF) //Except special case (Dead loop)
 				axis->nestCtr[axis->nestLevel-1]--;
+			
+			#ifdef SIMULATOR
+				if (axis->nestCtr[axis->nestLevel-1] == 0xFFFF)
+					deadloop = 2;
+			#endif
 		}
 		
 		else { //End of the loop
