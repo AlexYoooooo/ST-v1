@@ -6,8 +6,8 @@ About this algorithm:
 Assume the command given by PC is:
 5+1056,2-234,7(,3+444,7),3(,2(,2-233,4+20000,2),5-3333,2),0(,1+11,0)
 
-Format of the command: CDT,CDT,CDT
-C: Unsigned 16-bit: Counter, repeat this command for T times (actual execute count = C + 1)
+Format of the command: CDT,CDT,CDT...
+C: Unsigned 16-bit: Counter, repeat this command for C times (actual execute count = C + 1)
 D: 1-bit: Forward direction = 1; Backward direction = 0
 T: Unsigned 15-bit: Wait for T cycles before next instruction
 If CT = 0x8000: Enter a loop
