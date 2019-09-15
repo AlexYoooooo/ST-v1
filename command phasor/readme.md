@@ -1,12 +1,13 @@
 # Phasor
 
+## About
 The phasor is a program that used to decode the query.
 
 The PC will send a query (instruction file) to the hardware that contains information about the speed, direction and distance of the motor. The instruction can be nested and looped.
 
 The phasor program in the hardware (the MCU) will decode the query, then send command to motor (control the direction) and timer (control the speed).
 
-------
+## The files
 
 phasor-orginal.c shows how the phasor program work in PC environment. Please compile this c program using gcc compiler. To discover this program, read the command and try modify the step[] array.
 
