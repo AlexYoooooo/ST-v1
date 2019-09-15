@@ -19,9 +19,9 @@ void stepW(uint8_t dir) { //Motor step forward/backward
 		PORTD |= 0b01000000;
 	else
 		PORTD &= 0b10111111;
-	_delay_loop_1(3); //9 CPU cycle = 9/16us, A5958 requires 400ns setup time
+	_delay_loop_1(3); //9 CPU cycles = 9/16us, A5958 requires 400ns setup time
 	PORTD |= 0b10000000; //STEP rise
-	_delay_loop_1(5); //15 CPU cycle = 15/16us, plus the PORTD |= 0b10000000 get 1us. A5958 requires 1us pulse time
+	_delay_loop_1(5); //15 CPU cycles = 15/16us, plus the instruction "PORTD |= 0b10000000", in total gets 1us. A5958 requires 1us pulse time
 	PORTD &= 0b01111111; //STEP fall
 	sei();
 }

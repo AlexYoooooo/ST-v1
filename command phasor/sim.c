@@ -1,6 +1,6 @@
 /******************************************************************************
-The front-end software should generate a hexdecimal-coded file called "instruction.txt" that
-contains the instruction which will be sent to the hardware.
+The front-end software should generate a hexdecimal-coded file called
+"instruction.txt" that contains the instruction which will be sent to the hardware.
 This program will read that file and simulate how the hardware will react with
 the given query.
 ******************************************************************************/
