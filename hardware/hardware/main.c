@@ -18,9 +18,9 @@
 //Analysis purpose
 volatile uint8_t systemLoad = 0x00;
 
-//Motor query and phasor
+//Motor query and parser
 volatile uint8_t query[1024*4]; //1024 instruction word in total, 4-byte per word
-volatile struct Phasor axisW, axisX, axisY, axisZ;
+volatile struct Parser axisW, axisX, axisY, axisZ;
 
 
 /************************************************************************/
@@ -48,7 +48,7 @@ uint8_t requestSerialSync() {
 
 //External packed routine
 
-#include "../../command phasor/phasor-eventdriven.c"
+#include "../../command parser/parser-eventdriven.c"
 #include "motor.c"
 
 
@@ -56,11 +56,11 @@ uint8_t requestSerialSync() {
 
 //Init hardwares
 int main(void) {
-	//Init phasor
-	phasorReset(&axisW, 0);
-	phasorReset(&axisX, 0);
-	phasorReset(&axisY, 0);
-	phasorReset(&axisZ, 0);
+	//Init parser
+	parserReset(&axisW, 0);
+	parserReset(&axisX, 0);
+	parserReset(&axisY, 0);
+	parserReset(&axisZ, 0);
 	
 	//Init UART
 	UBRR0 = RC_CLOCK_FREQ/16/UART_BAUD-1;
@@ -107,10 +107,10 @@ int main(void) {
 				checksum -= receive;
 			}
 			
-			phasorReset(&axisW, (query[4096-4*2]<<8) | query[4096-4*2+1] ); //query[4088-4089]
-			phasorReset(&axisX, (query[4096-3*2]<<8) | query[4096-3*2+1] ); //query[4090-4091]
-			phasorReset(&axisY, (query[4096-2*2]<<8) | query[4096-2*2+1] ); //query[4092-4093]
-			phasorReset(&axisZ, (query[4096-1*2]<<8) | query[4096-1*2+1] ); //query[4094-4095]
+			parserReset(&axisW, (query[4096-4*2]<<8) | query[4096-4*2+1] ); //query[4088-4089]
+			parserReset(&axisX, (query[4096-3*2]<<8) | query[4096-3*2+1] ); //query[4090-4091]
+			parserReset(&axisY, (query[4096-2*2]<<8) | query[4096-2*2+1] ); //query[4092-4093]
+			parserReset(&axisZ, (query[4096-1*2]<<8) | query[4096-1*2+1] ); //query[4094-4095]
 			
 			sendSerialSync(checksum); //Return checksum
 		}
@@ -118,63 +118,63 @@ int main(void) {
 		else { //Instant command
 			switch ( (receive&0b11000000) >> 6 ) { //W-axis command
 				case 3: //Start/stop: 11
-					if (getW())
-						stopW();
-					else
-						startW();
-					break;
+				if (getW())
+				stopW();
+				else
+				startW();
+				break;
 				case 2: //Forward step: 10
-					stepW(1);
-					break;
+				stepW(1);
+				break;
 				case 1: //Backward step: 01
-					stepW(0);
-					break;
+				stepW(0);
+				break;
 				/* case 0: //No action: 00 */
 			}
-	
+			
 			switch ( (receive&0b00110000) >> 4 ) { //X-axis command
 				case 3:
-					if (getX())
-						stopX();
-					else
-						startX();
-					break;
+				if (getX())
+				stopX();
+				else
+				startX();
+				break;
 				case 2:
-					stepX(1);
-					break;
+				stepX(1);
+				break;
 				case 1:
-					stepX(0);
-					break;
+				stepX(0);
+				break;
 			}
-	
+			
 			switch ( (receive&0b00001100) >> 2 ) { //Y-axis command
 				case 3:
-					if (getY())
-						stopY();
-					else
-						startY();
-					break;
+				if (getY())
+				stopY();
+				else
+				startY();
+				break;
 				case 2:
-					stepY(1);
-					break;
+				stepY(1);
+				break;
 				case 1:
-					stepY(0);
-					break;
+				stepY(0);
+				break;
 			}
-		
+			
 			switch (receive&0b00000011) { //Y-axis command
 				case 3:
-					if (getZ())
-						stopZ();
-					else
-						startZ();
-					break;
+				if (getZ())
+				stopZ();
+				else
+				startZ();
+				break;
 				case 2:
-					stepZ(1);
-					break;
+				stepZ(1);
+				break;
 				case 1:
-					stepZ(0);
-					break;
+				stepZ(0);
+				break;
 			}
 			sendSerialSync(receive); //Return cmd to ACK the cmd
 		}
@@ -188,27 +188,27 @@ int main(void) {
 // ISR Interrupt Service Routine -----------------------------------------
 
 ISR(TIMER1_COMPA_vect) { //Time delay reached
-	uint16_t phasorResult = phase(&axisW); //Phasor process instruction query
-	setW(phasorResult & 0x7FFF); //Set delay (motor speed)
-	stepW(phasorResult >> 15); //Step motor forward/backward
+	uint16_t parserResult = phase(&axisW); //Parser process instruction query
+	setW(parserResult & 0x7FFF); //Set delay (motor speed)
+	stepW(parserResult >> 15); //Step motor forward/backward
 }
 
 ISR(TIMER3_COMPA_vect) {
-	uint16_t phasorResult = phase(&axisX);
-	setX(phasorResult & 0x7FFF);
-	stepX(phasorResult >> 15);
+	uint16_t parserResult = phase(&axisX);
+	setX(parserResult & 0x7FFF);
+	stepX(parserResult >> 15);
 }
 
 ISR(TIMER4_COMPA_vect) {
-	uint16_t phasorResult = phase(&axisY);
-	setY(phasorResult & 0x7FFF);
-	stepY(phasorResult >> 15);
+	uint16_t parserResult = phase(&axisY);
+	setY(parserResult & 0x7FFF);
+	stepY(parserResult >> 15);
 }
 
 ISR(TIMER5_COMPA_vect) {
-	uint16_t phasorResult = phase(&axisZ);
-	setZ(phasorResult & 0x7FFF);
-	stepZ(phasorResult >> 15);
+	uint16_t parserResult = phase(&axisZ);
+	setZ(parserResult & 0x7FFF);
+	stepZ(parserResult >> 15);
 }
 
 
