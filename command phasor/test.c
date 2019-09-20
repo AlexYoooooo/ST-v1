@@ -7,14 +7,14 @@ signed long long int motorDegree = 0;
 unsigned long long int eventNum = 0;
 
 uint8_t query[1024*4];
-struct Phasor axisW;
+struct Parser axisW;
 
-#include "phasor-eventdriven.c"
+#include "parser-eventdriven.c"
 
 //Init hardwares
 int main(void) {
 	
-	//See phasor-orginal.c
+	//See parser-orginal.c
 	uint32_t step[] = {
 		(5<<16)|	(1<<15)|	1056,
 		(2<<16)|	(0<<15)|	234,
@@ -28,7 +28,7 @@ int main(void) {
 		(2<<16)|	(0<<15)|	0,
 		(5<<16)|	(0<<15)|	3333,
 		(3<<16)|	(0<<15)|	0,
-		//Append a dead loop to prevent instruction phasor buffer overflow
+		//Append a dead loop to prevent instruction parser buffer overflow
 		(65535<<16)|	(1<<15)|	0,
 		(1<<16)|	(1<<15)|	11,
 		(65535<<16)|	(0<<15)|	0
@@ -53,8 +53,8 @@ int main(void) {
 	}
 #endif	
 	
-	//Init phasor
-	phasorReset(&axisW, 0);
+	//Init parser
+	parserReset(&axisW, 0);
 	
 	uint8_t dummy;
 	printf("Hit enter to fire an event.\n");

@@ -1,5 +1,5 @@
 /*
-This program is used to verify the algorithm of the command phasor
+This program is used to verify the algorithm of the command parser
 The algorithm will be used in the MCU; however, due to the low computation power and memory capacity of the MCU, optimized version will be used (lower nest level and ect.).
 
 About this algorithm:
@@ -45,7 +45,7 @@ uint32_t step[] = {
 
 int main() {
 	//Command read pointer
-	uint16_t phasor;
+	uint16_t parser;
 	uint16_t dataLength = 15;
 	
 	//Loop control (max nest level = 256)
@@ -60,32 +60,32 @@ int main() {
 	//Operation counter
 	uint16_t currentCounter;
 	
-	for (phasor = 0; phasor < dataLength; phasor++) {
-		printf("\t\tPhasor = %d\n",phasor);
+	for (parser = 0; parser < dataLength; parser++) {
+		printf("\t\tParser = %d\n",parser);
 		
 		//Enter a loop
-		if ( (step[phasor]&0xFFFF) == 0x8000) {
+		if ( (step[parser]&0xFFFF) == 0x8000) {
 			printf("%d --> Nest++ --> %d\n",nestLevel,nestLevel+1);
-			nestCounter[nestLevel] = step[phasor] >> 16;
+			nestCounter[nestLevel] = step[parser] >> 16;
 			
 			//Record start location of this iteration
-			nestLocationStart[nestLevel] = phasor;
+			nestLocationStart[nestLevel] = parser;
 			
 			nestLevel++;
 		}
 		
 		//Leave a loop
-		else if ( (step[phasor]&0xFFFF) == 0x0000) {
+		else if ( (step[parser]&0xFFFF) == 0x0000) {
 			printf("%d --> Nest-- --> %d (remainder %d) \n",nestLevel,nestLevel-1,nestCounter[nestLevel-1]);
 			
 			//Dead loop (repeat for 0 times means repeat forever)
 			if (nestCounter[nestLevel-1] == 65535) {
-				phasor = nestLocationStart[nestLevel-1];
+				parser = nestLocationStart[nestLevel-1];
 			}
 			
 			//Loop in progress
 			else if (nestCounter[nestLevel-1] > 0) {
-				phasor = nestLocationStart[nestLevel-1];
+				parser = nestLocationStart[nestLevel-1];
 				nestCounter[nestLevel-1]--;
 			}
 			
@@ -99,8 +99,8 @@ int main() {
 		
 		//Execute operation
 		else
-			for (currentCounter = step[phasor]>>16; currentCounter >= 0; currentCounter--) {
-				printf("Dir %d, Set timer %d\n",(step[phasor]&0x8000)>>15,step[phasor]&0x7FFF);
+			for (currentCounter = step[parser]>>16; currentCounter >= 0; currentCounter--) {
+				printf("Dir %d, Set timer %d\n",(step[parser]&0x8000)>>15,step[parser]&0x7FFF);
 				Sleep(10); //Debug using
 			}
 	}

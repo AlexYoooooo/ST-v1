@@ -1,19 +1,19 @@
-# Phasor
+# Parser
 
 ## About
-The phasor is a program that used to decode the query.
+The parser is a program that used to decode the query.
 
 The PC will send a query (instruction file) to the hardware that contains information about the speed, direction and distance of the motor. The instruction can be nested and looped.
 
-The phasor program in the hardware (the MCU) will decode the query, then send command to motor (control the direction) and timer (control the speed).
+The parser program in the hardware (the MCU) will decode the query, then send command to motor (control the direction) and timer (control the speed).
 
 ## The files
 
-phasor-orginal.c shows how the phasor program work in PC environment. Please compile this c program using gcc compiler. To discover this program, read the command and try modify the step[] array.
+parser-orginal.c shows how the parser program work in PC environment. Please compile this c program using gcc compiler. To discover this program, read the command and try modify the step[] array.
 
-phasor-eventdriver.c is a modified version of the phasor. In practical, the MCU is event driven (the MCU drives the motor at t1, sets the timer and waits for t, then drives the motor again). This code will be embedded in the MCU's program.
+parser-eventdriver.c is a modified version of the parser. In practical, the MCU is event driven (the MCU drives the motor at t1, sets the timer and waits for t, then drives the motor again). This code will be embedded in the MCU's program.
 
-test.c is a testbench used to verify the phasor-eventdriver.c. Compile and run this code using gcc, it sould give you the similar output like phasor-orginal.c.
+test.c is a testbench used to verify the parser-eventdriver.c. Compile and run this code using gcc, it sould give you the similar output like parser-orginal.c.
 
 sim.c is a program used to simulate the query output on PC. Please compile this program, used this program to verify your query before upload your query to the MCU. For instruction of this program, refer the comment in this c file.
 
@@ -48,7 +48,7 @@ ___For example:___
 
 For the query ```5+1056,2-234,7(,3+444,7),3(,2(,2-233,4+20000,2),5-3333,2),0(,1+11,0)```, we can trade it like a 32-bit wide array:
 ```C
-//See phasor-orginal.c
+//See parser-orginal.c
 	uint32_t step[] = {
 		(5<<16)|	(1<<15)|	1056,
 		(2<<16)|	(0<<15)|	234,
@@ -62,7 +62,7 @@ For the query ```5+1056,2-234,7(,3+444,7),3(,2(,2-233,4+20000,2),5-3333,2),0(,1+
 		(2<<16)|	(0<<15)|	0,
 		(5<<16)|	(0<<15)|	3333,
 		(3<<16)|	(0<<15)|	0,
-		//Append a dead loop to prevent instruction phasor buffer overflow
+		//Append a dead loop to prevent instruction parser buffer overflow
 		(65535<<16)|	(1<<15)|	0,
 		(1<<16)|	(1<<15)|	11,
 		(65535<<16)|	(0<<15)|	0

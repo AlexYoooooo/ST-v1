@@ -18,9 +18,9 @@ signed long long int motorDegreeW = 0, motorDegreeX = 0, motorDegreeY = 0, motor
 unsigned long long int eventNumW = 0, eventNumX = 0, eventNumY = 0, eventNumZ = 0;
 
 uint8_t query[1024*4];
-struct Phasor axisW, axisX, axisY, axisZ;
+struct Parser axisW, axisX, axisY, axisZ;
 
-#include "phasor-eventdriven.c"
+#include "parser-eventdriven.c"
 
 uint8_t charToInt(char c) {
 	if (c >= '0' && c <= '9')
@@ -82,20 +82,20 @@ int main(void) {
 			printf("| %02x\t",query[i*16+j]);
 		printf("\n");
 	}
-	uint16_t phasorStartW = (query[4096-4*2]<<8) | query[4096-4*2+1];
-	printf("phasorStartW = 0x%04x (%d)\n",phasorStartW,phasorStartW);
-	uint16_t phasorStartX = (query[4096-3*2]<<8) | query[4096-3*2+1];
-	printf("phasorStartX = 0x%04x (%d)\n",phasorStartX,phasorStartX);
-	uint16_t phasorStartY = (query[4096-2*2]<<8) | query[4096-2*2+1];
-	printf("phasorStartY = 0x%04x (%d)\n",phasorStartY,phasorStartY);
-	uint16_t phasorStartZ = (query[4096-1*2]<<8) | query[4096-1*2+1];
-	printf("phasorStartZ = 0x%04x (%d)\n",phasorStartZ,phasorStartZ);
+	uint16_t parserStartW = (query[4096-4*2]<<8) | query[4096-4*2+1];
+	printf("parserStartW = 0x%04x (%d)\n",parserStartW,parserStartW);
+	uint16_t parserStartX = (query[4096-3*2]<<8) | query[4096-3*2+1];
+	printf("parserStartX = 0x%04x (%d)\n",parserStartX,parserStartX);
+	uint16_t parserStartY = (query[4096-2*2]<<8) | query[4096-2*2+1];
+	printf("parserStartY = 0x%04x (%d)\n",parserStartY,parserStartY);
+	uint16_t parserStartZ = (query[4096-1*2]<<8) | query[4096-1*2+1];
+	printf("parserStartZ = 0x%04x (%d)\n",parserStartZ,parserStartZ);
 	
-	//Init phasor
-	phasorReset(&axisW, phasorStartW);
-	phasorReset(&axisX, phasorStartX);
-	phasorReset(&axisY, phasorStartY);
-	phasorReset(&axisZ, phasorStartZ);
+	//Init parser
+	parserReset(&axisW, parserStartW);
+	parserReset(&axisX, parserStartX);
+	parserReset(&axisY, parserStartY);
+	parserReset(&axisZ, parserStartZ);
 	
 	fp = fopen("instruction.dump","w");
 	
