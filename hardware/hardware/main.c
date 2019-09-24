@@ -8,7 +8,7 @@
 /************************************************************************/
 
 #define RC_CLOCK_FREQ 16000000
-#define UART_BAUD 19200
+#define UART_BAUD 4800
 
 
 /************************************************************************/
@@ -65,7 +65,7 @@ int main(void) {
 	//Init UART
 	UBRR0 = RC_CLOCK_FREQ/16/UART_BAUD-1;
 	UCSR0B = (1<<RXEN0) | (1<<TXEN0); //Enable Tx, Rx
-	UCSR0C = (1<<USBS0) | (3<<UCSZ00); //Async USART (UART), no parity, 2 stop bits, 8 bits data
+	UCSR0C = (0<<USBS0) | (3<<UCSZ00); //Async USART (UART), no parity, 1 stop bits, 8 bits data
 	
 	//Init I/O and motor mode
 	DDRC = 0b10101001; // C	2-STEP		2-DIR		2-EN			1-STEP
@@ -94,87 +94,99 @@ int main(void) {
 	sei();
 	uint8_t checksum;
 	uint8_t receive;
+	uint8_t chunk;
 	sendSerialSync(0x6D); //System OK = 0b01101101 <-- Use this pattern to check BAUD paring
 	
 	for(;;) { //System main loop
 		receive = requestSerialSync();
 		
 		if (receive == 0x00) { //Send instruction query to MCU
-			checksum = 0;
-			for (uint16_t i = 0; i < 4096; i++) {
-				receive = requestSerialSync();
-				query[i] = receive;
-				checksum -= receive;
+			chunk = requestSerialSync();
+			if (chunk == requestSerialSync()) { //Send chunk twice to prevent error
+				sendSerialSync(1); //Chunk OK
+
+				checksum = 0;
+				for (uint16_t i = 0; i < 256; i++) {
+					receive = requestSerialSync();
+					query[ (chunk<<8) | i] = receive;
+					checksum -= receive;
+				}
+			
+				parserReset(&axisW, (query[4096-4*2]<<8) | query[4096-4*2+1] ); //query[4088-4089]
+				parserReset(&axisX, (query[4096-3*2]<<8) | query[4096-3*2+1] ); //query[4090-4091]
+				parserReset(&axisY, (query[4096-2*2]<<8) | query[4096-2*2+1] ); //query[4092-4093]
+				parserReset(&axisZ, (query[4096-1*2]<<8) | query[4096-1*2+1] ); //query[4094-4095]
+			
+				sendSerialSync(checksum); //Return checksum	
+
 			}
+			else {
+				sendSerialSync(0); //Chunk bad
+			}
+
 			
-			parserReset(&axisW, (query[4096-4*2]<<8) | query[4096-4*2+1] ); //query[4088-4089]
-			parserReset(&axisX, (query[4096-3*2]<<8) | query[4096-3*2+1] ); //query[4090-4091]
-			parserReset(&axisY, (query[4096-2*2]<<8) | query[4096-2*2+1] ); //query[4092-4093]
-			parserReset(&axisZ, (query[4096-1*2]<<8) | query[4096-1*2+1] ); //query[4094-4095]
-			
-			sendSerialSync(checksum); //Return checksum
 		}
 		
 		else { //Instant command
 			switch ( (receive&0b11000000) >> 6 ) { //W-axis command
 				case 3: //Start/stop: 11
-				if (getW())
-				stopW();
-				else
-				startW();
-				break;
+					if (getW())
+					stopW();
+					else
+					startW();
+					break;
 				case 2: //Forward step: 10
-				stepW(1);
-				break;
+					stepW(1);
+					break;
 				case 1: //Backward step: 01
-				stepW(0);
-				break;
+					stepW(0);
+					break;
 				/* case 0: //No action: 00 */
 			}
 			
 			switch ( (receive&0b00110000) >> 4 ) { //X-axis command
 				case 3:
-				if (getX())
-				stopX();
-				else
-				startX();
-				break;
+					if (getX())
+						stopX();
+					else
+						startX();
+					break;
 				case 2:
-				stepX(1);
-				break;
+					stepX(1);
+					break;
 				case 1:
-				stepX(0);
-				break;
+					stepX(0);
+					break;
 			}
 			
 			switch ( (receive&0b00001100) >> 2 ) { //Y-axis command
 				case 3:
-				if (getY())
-				stopY();
-				else
-				startY();
-				break;
+					if (getY())
+						stopY();
+					else
+						startY();
+					break;
 				case 2:
-				stepY(1);
-				break;
+					stepY(1);
+					break;
 				case 1:
-				stepY(0);
-				break;
+					stepY(0);
+					break;
 			}
 			
-			switch (receive&0b00000011) { //Y-axis command
+			switch (receive&0b00000011) { //Z-axis command
 				case 3:
-				if (getZ())
-				stopZ();
-				else
-				startZ();
-				break;
+					if (getZ())
+						stopZ();
+					else
+						startZ();
+					break;
 				case 2:
-				stepZ(1);
-				break;
+					stepZ(1);
+					break;
 				case 1:
-				stepZ(0);
-				break;
+					stepZ(0);
+					break;
 			}
 			sendSerialSync(receive); //Return cmd to ACK the cmd
 		}
