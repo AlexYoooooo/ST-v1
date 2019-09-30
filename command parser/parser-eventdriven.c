@@ -11,6 +11,7 @@ void parserReset(volatile struct Parser *axis, uint16_t queryLocation) {
 	axis->parser = queryLocation;
 	axis->nestLevel = 0;
 	axis->currentCtr = 0;
+	return;
 }
 
 uint16_t phase(volatile struct Parser *axis) {
@@ -70,4 +71,6 @@ uint16_t phase(volatile struct Parser *axis) {
 		
 		return dirAndDelay;
 	}
+
+	return 0;
 }

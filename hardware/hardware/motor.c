@@ -2,7 +2,7 @@
 
 //Axis-W Timer1
 void startW() { //Timer scaler <- 1
-	TCCR1B |= 0b00000001;
+	TCCR1B |= 0b00000010;
 }
 void stopW() { //Timer scaler <- 0
 	TCCR1B &= 0b11111000;
@@ -28,7 +28,7 @@ void stepW(uint8_t dir) { //Motor step forward/backward
 
 //Axis-X Timer3
 void startX() {
-	TCCR3B |= 0b00000001;
+	TCCR3B |= 0b00000010;
 }
 void stopX() {
 	TCCR3B &= 0b11111000;
@@ -54,7 +54,7 @@ void stepX(uint8_t dir) {
 
 //Axis-Y Timer4
 void startY() {
-	TCCR4B |= 0b00000001;
+	TCCR4B |= 0b00000010;
 }
 void stopY() {
 	TCCR4B &= 0b11111000;
@@ -80,7 +80,7 @@ void stepY(uint8_t dir) {
 
 //Axis-Z Timer5
 void startZ() {
-	TCCR5B |= 0b00000001;
+	TCCR5B |= 0b00000010;
 }
 void stopZ() {
 	TCCR5B &= 0b11111000;

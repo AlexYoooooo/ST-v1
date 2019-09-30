@@ -19,7 +19,24 @@
 volatile uint8_t systemLoad = 0x00;
 
 //Motor query and parser
-volatile uint8_t query[1024*4]; //1024 instruction word in total, 4-byte per word
+//volatile uint8_t query[1024*4]; //1024 instruction word in total, 4-byte per word
+volatile uint8_t query[1024*4] = {
+	0xFF, 0xFF, 0x80, 0x00,
+	0x0F, 0x9F, 0x83, 0xE8,
+	0xFF, 0xFF, 0x00, 0x00,
+
+	0xFF, 0xFF, 0x80, 0x00,
+	0x0F, 0x9F, 0x93, 0x88,
+	0xFF, 0xFF, 0x00, 0x00,
+
+	0xFF, 0xFF, 0x80, 0x00,
+	0x0F, 0x9F, 0x27, 0x10,
+	0xFF, 0xFF, 0x00, 0x00,
+
+	0xFF, 0xFF, 0x80, 0x00,
+	0x0F, 0x9F, 0x4E, 0x20,
+	0xFF, 0xFF, 0x00, 0x00,
+};
 volatile struct Parser axisW, axisX, axisY, axisZ;
 
 
@@ -38,6 +55,7 @@ volatile struct Parser axisW, axisX, axisY, axisZ;
 void sendSerialSync(uint8_t data) {
 	while ( !(UCSR0A & (1<<UDRE0)) ); //Wait until last word send
 	UDR0 = data;
+	return;
 }
 
 //Request data, wait until data arrives
@@ -90,50 +108,51 @@ int main(void) {
 	TCCR5B = 0b00001000;
 	TIMSK5 = 0b00000010;
 	
+	query[4089] = 0;
+	query[4091] = 12;
+	query[4093] = 24;
+	query[4095] = 36;
+	parserReset(&axisW, (query[4088]<<8) | query[4089] ); //query[4088-4089]
+	parserReset(&axisX, (query[4090]<<8) | query[4091] ); //query[4090-4091]
+	parserReset(&axisY, (query[4092]<<8) | query[4093] ); //query[4092-4093]
+	parserReset(&axisZ, (query[4094]<<8) | query[4095] ); //query[4094-4095]
+	startW();
+	startX();
+//	startY();
+	startZ();
+	
 	//System ready, listen to front-end
 	sei();
-	uint8_t checksum;
-	uint8_t receive;
-	uint8_t chunk;
+	uint8_t checksum ,receive;
 	sendSerialSync(0x6D); //System OK = 0b01101101 <-- Use this pattern to check BAUD paring
+
 	
 	for(;;) { //System main loop
 		receive = requestSerialSync();
 		
 		if (receive == 0x00) { //Send instruction query to MCU
-			chunk = requestSerialSync();
-			if (chunk == requestSerialSync()) { //Send chunk twice to prevent error
-				sendSerialSync(1); //Chunk OK
-
-				checksum = 0;
-				for (uint16_t i = 0; i < 256; i++) {
-					receive = requestSerialSync();
-					query[ (chunk<<8) | i] = receive;
-					checksum -= receive;
-				}
-			
-				parserReset(&axisW, (query[4096-4*2]<<8) | query[4096-4*2+1] ); //query[4088-4089]
-				parserReset(&axisX, (query[4096-3*2]<<8) | query[4096-3*2+1] ); //query[4090-4091]
-				parserReset(&axisY, (query[4096-2*2]<<8) | query[4096-2*2+1] ); //query[4092-4093]
-				parserReset(&axisZ, (query[4096-1*2]<<8) | query[4096-1*2+1] ); //query[4094-4095]
-			
-				sendSerialSync(checksum); //Return checksum	
-
+			checksum = 0;
+			for (uint16_t i = 0; i < 4096; i++) {
+				receive = requestSerialSync();
+				query[i] = receive;
+				checksum -= receive;
 			}
-			else {
-				sendSerialSync(0); //Chunk bad
-			}
-
 			
+			parserReset(&axisW, (query[4096-4*2]<<8) | query[4096-4*2+1] ); //query[4088-4089]
+			parserReset(&axisX, (query[4096-3*2]<<8) | query[4096-3*2+1] ); //query[4090-4091]
+			parserReset(&axisY, (query[4096-2*2]<<8) | query[4096-2*2+1] ); //query[4092-4093]
+			parserReset(&axisZ, (query[4096-1*2]<<8) | query[4096-1*2+1] ); //query[4094-4095]
+			
+			sendSerialSync(checksum); //Return checksum
 		}
 		
 		else { //Instant command
-			switch ( (receive&0b11000000) >> 6 ) { //W-axis command
+			switch ( receive&0b00000011 ) { //U14-axis command
 				case 3: //Start/stop: 11
 					if (getW())
-					stopW();
+						stopW();
 					else
-					startW();
+						startW();
 					break;
 				case 2: //Forward step: 10
 					stepW(1);
@@ -144,7 +163,7 @@ int main(void) {
 				/* case 0: //No action: 00 */
 			}
 			
-			switch ( (receive&0b00110000) >> 4 ) { //X-axis command
+			switch ( (receive&0b00001100) >> 2 ) { //U15-axis command
 				case 3:
 					if (getX())
 						stopX();
@@ -159,7 +178,7 @@ int main(void) {
 					break;
 			}
 			
-			switch ( (receive&0b00001100) >> 2 ) { //Y-axis command
+			switch ( (receive&0b00110000) >> 4 ) { //U16-axis command
 				case 3:
 					if (getY())
 						stopY();
@@ -174,7 +193,7 @@ int main(void) {
 					break;
 			}
 			
-			switch (receive&0b00000011) { //Z-axis command
+			switch ( (receive&0b11000000) >> 6 ) { //U17-axis command
 				case 3:
 					if (getZ())
 						stopZ();
