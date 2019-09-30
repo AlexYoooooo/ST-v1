@@ -19,24 +19,7 @@
 volatile uint8_t systemLoad = 0x00;
 
 //Motor query and parser
-//volatile uint8_t query[1024*4]; //1024 instruction word in total, 4-byte per word
-volatile uint8_t query[1024*4] = {
-	0xFF, 0xFF, 0x80, 0x00,
-	0x0F, 0x9F, 0x83, 0xE8,
-	0xFF, 0xFF, 0x00, 0x00,
-
-	0xFF, 0xFF, 0x80, 0x00,
-	0x0F, 0x9F, 0x93, 0x88,
-	0xFF, 0xFF, 0x00, 0x00,
-
-	0xFF, 0xFF, 0x80, 0x00,
-	0x0F, 0x9F, 0x27, 0x10,
-	0xFF, 0xFF, 0x00, 0x00,
-
-	0xFF, 0xFF, 0x80, 0x00,
-	0x0F, 0x9F, 0x4E, 0x20,
-	0xFF, 0xFF, 0x00, 0x00,
-};
+volatile uint8_t query[1024*4]; //1024 instruction word in total, 4-byte per word
 volatile struct Parser axisW, axisX, axisY, axisZ;
 
 
@@ -107,19 +90,6 @@ int main(void) {
 	TIMSK4 = 0b00000010;
 	TCCR5B = 0b00001000;
 	TIMSK5 = 0b00000010;
-	
-	query[4089] = 0;
-	query[4091] = 12;
-	query[4093] = 24;
-	query[4095] = 36;
-	parserReset(&axisW, (query[4088]<<8) | query[4089] ); //query[4088-4089]
-	parserReset(&axisX, (query[4090]<<8) | query[4091] ); //query[4090-4091]
-	parserReset(&axisY, (query[4092]<<8) | query[4093] ); //query[4092-4093]
-	parserReset(&axisZ, (query[4094]<<8) | query[4095] ); //query[4094-4095]
-	startW();
-	startX();
-//	startY();
-	startZ();
 	
 	//System ready, listen to front-end
 	sei();
