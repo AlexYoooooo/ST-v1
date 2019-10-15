@@ -1,0 +1,156 @@
+<html>
+	<head>
+		<title>Query generator</title>
+		<meta charset="utf-8" />
+	</head>
+	<body>
+		<style>
+			textarea {
+				min-width: 100%;
+				max-width: 100%;
+				height: 200px;
+			}
+			button {
+				width: 100%;
+			}
+		</style>
+		
+		<h1>Motor Query Generator</h1>
+		<i>V1, by Captdam</i><hr />
+		
+		<h2>1. Write your query here:</h2>
+		<label>Example</label><br />
+		<textarea disabled>
+//Instruction is something tells the motor: how much revolution? in what direction? what is the speed?
+//Query is something contains a group of instructions. The motor controller will execute the instructions in query one by one.
+//The format of an instruction is number of repeat time (1 to 65534), direction ("+" or "-"), time of delay (x0.5us, 1 to 32767, but better to be greater than 500), followed a "," to separate each instruction.
+//Detail here: https://github.com/AlexYoooooo/ST-v1/tree/master/command%20parser#the-query. Example below:
+
+3+600,				//Move forward, speed 1/600, repeat 3 times (move 4 steps), notice the speed is 1/600, the number means the delay
+700-20,				//Move backward, speed 1/20, repeat 700 times (move 701 steps), notice the number means repeat times
+300+205, 508+3000,		//You can write multiple instruction in one line. You should write the query in such way easy-to-read for human
+200( 400+2000, 800-10000 ),	//You create a loop here, the loop will be executed 201 times. You can create nested loop. Max nested level is 14
+F( 123+589 ),			//Your create a dead loop
+		</textarea><br />
+		<label>Motor 1</label><br />
+		<textarea id="m1Exp"></textarea><br />
+		<label>Motor 2</label><br />
+		<textarea id="m2Exp"></textarea><br />
+		<label>Motor 3</label><br />
+		<textarea id="m3Exp" disabled>
+F( 65000+32000 )
+		</textarea><br />
+		<label>Motor 4</label><br />
+		<textarea id="m4Exp"></textarea><br />
+		
+		<h2>2. Preview the machine code:</h2>
+		<button onclick="gen()">Generate query</button>
+		<span id="machineCodeHex"></span>
+		
+		<h2>3. Save the machine code and upload to controller:</h2>
+		
+		
+		<script>
+			'use strict';
+			
+			function expToQuery(exp) {
+				var query = '';
+				
+				//Remove comments, add "," for "(" and ")", then seperate instructions
+				exp = exp.replace(/\/\/[^\n]*\n/g,'\n').replace(/\(/g,'(,').replace(/\)/g,',)').split(',');
+				for (var i = 0; i < exp.length; i++) {
+					exp[i] = exp[i].trim();
+					if (exp[i] != '') {
+						
+						//Case 1 - Dead loop start
+						if (exp[i] == 'f(' || exp[i] == 'F(') {
+							query += 'ffff8000';
+						}
+						
+						//Case 2 - Loop start
+						else if (/^[0-9]+\($/.test(exp[i])) {
+							var cnt = /^([0-9]+)\(?/.exec(exp[i])[1] * 1; //Find the number, then convert to int
+							if (cnt > 65534) {
+								alert('Exp "'+exp[i]+'": Repeat = '+cnt+', OVERFLOW!');
+								return 'ERROR';
+							}
+							cnt = cnt.toString(16);
+							query += '0'.repeat(4-cnt.length) + cnt + '8000';
+						}
+						
+						//Case 3 - Loop end
+						else if (exp[i] == ')') {
+							query += 'abcd0000'; //Parser does not care high 16 bits
+						}
+						
+						//Case 4 - Normal instruction
+						else {
+							if (!/^[0-9]+[\+\-][0-9]+$/.test(exp[i])) {
+								alert('Exp "'+exp[i]+'": CANNOT UNDERSTAND!');
+								return 'ERROR';
+							}
+							var m = /^([0-9]+)([\+\-])([0-9]+)?/.exec(exp[i]);
+							var cnt = m[1] * 1;
+							var dir = m[2];
+							var spd = m[3] * 1;
+							if (cnt > 65534) {
+								alert('Exp "'+exp[i]+'": Repeat = '+cnt+', OVERFLOW!');
+								return 'ERROR';
+							}
+							if (spd > 32767) {
+								alert('Exp "'+exp[i]+'": Speed = '+spd+', OVERFLOW!');
+								return 'ERROR';
+							}
+							var ins = cnt * 65536;
+							if (dir == '+')
+								ins += 0x8000;
+							ins += spd;
+							ins = ins.toString(16);
+							query += '0'.repeat(8-ins.length) + ins;
+						}
+						
+					}
+				}
+				return query;
+			}
+			
+			function gen() {
+				var q = [];
+				for (var i = 0; i < 4; i++)
+					q[i] = expToQuery(document.getElementById('m'+(i+1)+'Exp').value)
+				
+				if (q.includes('ERROR'))
+					document.getElementById('machineCodeHex').innerHTML = '<span style="color: red;">ERROR!</span>';
+				else {
+					var l = [];
+					var queryLength = 0
+					for (var i = 0; i < 4; i++) {
+						l[i] = q[i].length / 2;
+						queryLength += l[i];
+					}
+					
+					if (queryLength > 1024*4 - 2*4) { //4k bytes query space, 8 bytes to save start position
+						document.getElementById('machineCodeHex').innerHTML = '<span style="color: red;">QUERY TOO LONG!</span>';
+					}
+					
+					q = q.join('');
+					q += '0'.repeat(1024*4*2 - 2*4*2 - q.length);
+					
+					var offset = 0;
+					for (var i = 0; i < 4; i++) {
+						var offsetStr = offset.toString(16);
+						q += '0'.repeat(8-offsetStr.length) + offsetStr;
+						offset += l[i];
+					}
+					
+					document.getElementById('machineCodeHex').innerHTML = '<p style="font-family: Courier; overflow-wrap: break-word;">' + q + '</p>';
+					alert('DONE! Query length '+queryLength+' bytes.')
+				}
+			}
+			
+			function saveToLocal(data) {
+				va
+			}
+		</script>
+	</body>
+</html>
