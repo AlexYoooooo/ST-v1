@@ -48,7 +48,7 @@ F( 65000+32000 )
 		<span id="machineCodeHex"></span>
 		
 		<h2>3. Save the machine code and upload to controller:</h2>
-		
+		<a id="downloadLink" download ="instruction.txt" href="#">Download query</a>
 		
 		<script>
 			'use strict';
@@ -144,12 +144,9 @@ F( 65000+32000 )
 					}
 					
 					document.getElementById('machineCodeHex').innerHTML = '<p style="font-family: Courier; overflow-wrap: break-word;">' + q + '</p>';
-					alert('DONE! Query length '+queryLength+' bytes.')
+					document.getElementById('downloadLink').href = 'data:application/octet-stream;charset=utf-8;base64,' + btoa(q);
+					alert('DONE! Query length '+queryLength+' bytes.');
 				}
-			}
-			
-			function saveToLocal(data) {
-				va
 			}
 		</script>
 	</body>
