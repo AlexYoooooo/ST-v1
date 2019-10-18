@@ -31,6 +31,7 @@
 300+205, 508+3000,		//You can write multiple instruction in one line. You should write the query in such way easy-to-read for human
 200( 400+2000, 800-10000 ),	//You create a loop here, the loop will be executed 201 times. You can create nested loop. Max nested level is 14
 F( 123+589 ),			//Your create a dead loop
+//Don't forget to append a dead loop in each motor to prevent parser buffer overflow
 		</textarea><br />
 		<label>Motor 1</label><br />
 		<textarea id="m1Exp"></textarea><br />
@@ -48,15 +49,16 @@ F( 65000+32000 ) //This axis has been disabled due to hardware issue
 		<span id="machineCodeHex"></span>
 		
 		<h2>3. Save the machine code and upload to controller:</h2>
-		<a id="downloadLink" download ="instruction.txt" href="#">Download query</a>
+		<a id="downloadLink" download ="instruction.dat" href="#">Download query</a>
 		
 		<h2>4. You may want to check the LOG:</h2>
-		<textarea style="min-height: 600px; max-height: 600px;" id="log"></textarea>
+		<textarea style="min-height: 200px; max-height: 200px;" id="log"></textarea>
 		
 		<script>
 			'use strict';
 			
 			function expToQuery(exp) {
+				exp += '\n';
 				var query = '';
 				
 				//Remove comments, add "," for "(" and ")", then seperate instructions
@@ -123,6 +125,8 @@ F( 65000+32000 ) //This axis has been disabled due to hardware issue
 			
 			function gen() {
 				var q = [];
+				document.getElementById('log').value = '';
+				writeLog('Start to compile. Time: '+Date());
 				
 				//Compile query for motors
 				for (var i = 0; i < 4; i++) {
