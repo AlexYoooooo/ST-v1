@@ -38,7 +38,7 @@ int main(void) {
 	
 	//Read instruction file
 	FILE *fp;
-	fp = fopen("instruction.txt","r");
+	fp = fopen("instruction.dat","r");
 	if (!fp) {
 		printf("Cannot find instruction file \"instruction.txt\".\n");
 		scanf("%c",dummy);
