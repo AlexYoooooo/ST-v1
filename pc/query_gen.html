@@ -38,7 +38,7 @@ F( 123+589 ),			//Your create a dead loop
 		<textarea id="m2Exp"></textarea><br />
 		<label>Motor 3</label><br />
 		<textarea id="m3Exp" disabled>
-F( 65000+32000 )
+F( 65000+32000 ) //This axis has been disabled due to hardware issue
 		</textarea><br />
 		<label>Motor 4</label><br />
 		<textarea id="m4Exp"></textarea><br />
@@ -49,6 +49,9 @@ F( 65000+32000 )
 		
 		<h2>3. Save the machine code and upload to controller:</h2>
 		<a id="downloadLink" download ="instruction.txt" href="#">Download query</a>
+		
+		<h2>4. You may want to check the LOG:</h2>
+		<textarea style="min-height: 600px; max-height: 600px;" id="log"></textarea>
 		
 		<script>
 			'use strict';
@@ -62,6 +65,8 @@ F( 65000+32000 )
 					exp[i] = exp[i].trim();
 					if (exp[i] != '') {
 						
+						writeLog('  Compile instruction '+i+': '+exp[i]);
+						
 						//Case 1 - Dead loop start
 						if (exp[i] == 'f(' || exp[i] == 'F(') {
 							query += 'ffff8000';
@@ -71,7 +76,7 @@ F( 65000+32000 )
 						else if (/^[0-9]+\($/.test(exp[i])) {
 							var cnt = /^([0-9]+)\(?/.exec(exp[i])[1] * 1; //Find the number, then convert to int
 							if (cnt > 65534) {
-								alert('Exp "'+exp[i]+'": Repeat = '+cnt+', OVERFLOW!');
+								writeLog('Exp "'+exp[i]+'": Repeat = '+cnt+', OVERFLOW!');
 								return 'ERROR';
 							}
 							cnt = cnt.toString(16);
@@ -86,7 +91,7 @@ F( 65000+32000 )
 						//Case 4 - Normal instruction
 						else {
 							if (!/^[0-9]+[\+\-][0-9]+$/.test(exp[i])) {
-								alert('Exp "'+exp[i]+'": CANNOT UNDERSTAND!');
+								writeLog('Exp "'+exp[i]+'": CANNOT UNDERSTAND!');
 								return 'ERROR';
 							}
 							var m = /^([0-9]+)([\+\-])([0-9]+)?/.exec(exp[i]);
@@ -94,11 +99,11 @@ F( 65000+32000 )
 							var dir = m[2];
 							var spd = m[3] * 1;
 							if (cnt > 65534) {
-								alert('Exp "'+exp[i]+'": Repeat = '+cnt+', OVERFLOW!');
+								writeLog('Exp "'+exp[i]+'": Repeat = '+cnt+', OVERFLOW!');
 								return 'ERROR';
 							}
 							if (spd > 32767) {
-								alert('Exp "'+exp[i]+'": Speed = '+spd+', OVERFLOW!');
+								writeLog('Exp "'+exp[i]+'": Speed = '+spd+', OVERFLOW!');
 								return 'ERROR';
 							}
 							var ins = cnt * 65536;
@@ -111,16 +116,25 @@ F( 65000+32000 )
 						
 					}
 				}
+				
+				writeLog('  Query compiled succeed!');
 				return query;
 			}
 			
 			function gen() {
 				var q = [];
-				for (var i = 0; i < 4; i++)
-					q[i] = expToQuery(document.getElementById('m'+(i+1)+'Exp').value)
 				
-				if (q.includes('ERROR'))
+				//Compile query for motors
+				for (var i = 0; i < 4; i++) {
+					writeLog('Compile query for M'+(i+1)+':');
+					q[i] = expToQuery(document.getElementById('m'+(i+1)+'Exp').value);
+				}
+				
+				if (q.includes('ERROR')) {
 					document.getElementById('machineCodeHex').innerHTML = '<span style="color: red;">ERROR!</span>';
+					writeLog('Compile Fail.');
+				}
+				
 				else {
 					var l = [];
 					var queryLength = 0
@@ -131,6 +145,7 @@ F( 65000+32000 )
 					
 					if (queryLength > 1024*4 - 2*4) { //4k bytes query space, 8 bytes to save start position
 						document.getElementById('machineCodeHex').innerHTML = '<span style="color: red;">QUERY TOO LONG!</span>';
+						writeLog('Query length '+queryLength+' bytes. TOO LONG!');
 					}
 					
 					q = q.join('');
@@ -145,8 +160,13 @@ F( 65000+32000 )
 					
 					document.getElementById('machineCodeHex').innerHTML = '<p style="font-family: Courier; overflow-wrap: break-word;">' + q + '</p>';
 					document.getElementById('downloadLink').href = 'data:application/octet-stream;charset=utf-8;base64,' + btoa(q);
+					writeLog('DONE! Query length '+queryLength+' bytes.');
 					alert('DONE! Query length '+queryLength+' bytes.');
 				}
+			}
+			
+			function writeLog(data) {
+				document.getElementById('log').value += data + '\n';
 			}
 		</script>
 	</body>
