@@ -159,7 +159,7 @@ F( 65000+32000 ) //This axis has been disabled due to hardware issue
 					var offset = 0;
 					for (var i = 0; i < 4; i++) {
 						var offsetStr = offset.toString(16);
-						q += '0'.repeat(8-offsetStr.length) + offsetStr;
+						q += '0'.repeat(4-offsetStr.length) + offsetStr;
 						offset += l[i];
 					}
 					
