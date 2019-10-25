@@ -1,33 +1,27 @@
 1. The PC should append a dead loop at the end of the instruction for each axis.
 
-2. The MCU's timer frequency = 16MHz (T=62.5ns). The delay time for each step should be greater than 2000:
-  The MCU need time to process the instruction.
-  The motor need time to response.
-
-3. The front end software should reset all the axis to the init point before use.
+2. The MCU's timer frequency = 16MHz (T=62.5ns). There is a 1/8 scaler on the timer of the MCU.
+   That been said, the motor's frequency is 2MHz.
+  
+3. The delay time for each step should be greater than 1000:
+   The MCU need time to process the instruction. The motor need time to response.
 
 4. Max nest level = 14
 
+5. Last 8 bytes in the query represent the start loaction of the query for each axis. Each axies uses 2 bytes (16-bit int).
+
 Instruction:
-PC > 1xxxxxxx:	Program instruction, length = x * 256 byte. Max instruction length: 1024 words (4096 bytes), Xmax = 16.
-		Instruction [1:0]: Start location (Init phasor) of Axis-W, phasor is 16-bit long.
-		Instruction [3:2]: --- of Axis-X.
-		Instruction [5:4]: --- of Axis-Y.
-		Instruction [7:6]: --- of Axis-Z.
-		Return: Checksum.
-			If checksum is not returned after sending package, that means one ore more byte lost.
-			In this case, sending one or more 0x00 until checksum returned. Then, re-send the entire package again.
-PC > 0000xxxx:	Stop motor. xxxx = Mask of motor (W-axis, X-axis, Y-axis, Z-axis)
-		Return: 0000xxxx
-PC > 0011xxxx:	Start motor.
-		Return: 0011xxxx
-PC > 0001xxxx:	Motor forward one step. (Do this after motor stopped)
-		Return: yyyyxxxx. yyyy = limit switch value
-PC > 0010xxxx:	Motor backword one step. (Do this after motor stopped)
-		Return: yyyyxxxx. yyyy = limit switch value
-PC > 0100xxxx:	Reload phasor from instruction buffer. Set delay to 200 cycle. (Do this after motor stopped)
-		Return: 0100xxxx
-PC > 01010000:	Get phasor statue
-		Return: Phasor statue (4*61 bytes)
-PC > else:	No action
-		Return: 0x00
+PC > 00000000: Enter program mode.
+               The PC should send a 4k byte query to the controller next, and then the controller will return a checksum.
+	       If checksum is not correct, re-enter the program mode and re-send the query.
+
+PC > xxxxxxxx:	Program instruction, length = x * 256 byte. Max instruction length: 1024 words (4096 bytes), Xmax = 16.
+		Instruction [1:0]: --- of Axis-1.
+		Instruction [3:2]: --- of Axis-2.
+		Instruction [5:4]: --- of Axis-3.
+		Instruction [7:6]: --- of Axis-4.
+		Return: the command you just send.
+			----: 00: No action
+			      01: 1 step forward
+			      10: 1 step backward
+			      11: Star/stop timer for this axis (pause/resume query)
