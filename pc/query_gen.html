@@ -49,7 +49,8 @@ F( 65000+32000 ) //This axis has been disabled due to hardware issue
 		<span id="machineCodeHex"></span>
 		
 		<h2>3. Save the machine code and upload to controller:</h2>
-		<a id="downloadLink" download ="instruction.dat" href="#">Download query</a>
+		<a id="downloadLink" download ="instruction.dat" href="#">Download query, save as: </a>
+		<input onchange="document.getElementById('downloadLink').download = this.value;" value="instruction.dat" />
 		
 		<h2>4. You may want to check the LOG:</h2>
 		<textarea style="min-height: 200px; max-height: 200px;" id="log"></textarea>
