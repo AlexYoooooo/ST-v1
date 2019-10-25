@@ -10,7 +10,7 @@ srl_flush(s1);
 
 while 1
 ipt=input('Enter command:' );
-ipt=uint16(ipt);
+ipt=uint8(ipt);
 disp(ipt);
 srl_write(s1,ipt);
 opt=srl_read(s1,10);
